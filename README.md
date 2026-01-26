@@ -1,1 +1,1 @@
-# Image-Recognition-app
+# AI Travel Planner
