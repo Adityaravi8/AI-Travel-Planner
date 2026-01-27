@@ -3,7 +3,6 @@ import { buildPrompt } from "./promptBuilder.js";
 import { ItinerarySchema } from "./itineraryValidator.js";
 
 export async function generateItinerary(trip, preferences) {
-  // Ensure paid API key is set
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error(
@@ -13,11 +12,9 @@ export async function generateItinerary(trip, preferences) {
 
   const client = new OpenAI({ apiKey });
 
-  // Build the prompt dynamically based on real trip and preferences
   const prompt = buildPrompt(trip, preferences);
 
   try {
-    // Call the paid OpenAI API
     const response = await client.chat.completions.create({
       model: "gpt-5.2",
       messages: [{ role: "system", content: prompt }],
@@ -30,13 +27,11 @@ export async function generateItinerary(trip, preferences) {
       throw new Error("OpenAI returned empty content");
     }
 
-    // Extract JSON from code blocks if OpenAI includes markdown
     const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
     if (jsonMatch) {
       content = jsonMatch[1];
     }
 
-    // Parse JSON and validate with your schema
     const raw = JSON.parse(content);
     return ItinerarySchema.parse(raw);
   } catch (error) {

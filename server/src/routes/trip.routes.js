@@ -5,7 +5,6 @@ import { generateItinerary } from "../ai/generateItinerary.js";
 
 const router = express.Router();
 
-// Create trip
 router.post("/", async (req, res) => {
   try {
     const trip = await Trip.create(req.body);
@@ -16,7 +15,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-// Add preference
 router.post("/:tripId/preferences", async (req, res) => {
   try {
     const { tripId } = req.params;
@@ -31,7 +29,6 @@ router.post("/:tripId/preferences", async (req, res) => {
   }
 });
 
-// Get AI itinerary
 router.get("/:tripId/itinerary", async (req, res) => {
   try {
     const trip = await Trip.findById(req.params.tripId);
