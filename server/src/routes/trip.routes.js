@@ -1,7 +1,7 @@
 import express from "express";
 import Trip from "../models/Trip.js";
 import Preference from "../models/Preference.js";
-import { generateItinerary } from "../ai/generateItinerary.js";
+import { generateItinerary } from "../ai/index.js";
 
 const router = express.Router();
 

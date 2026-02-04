@@ -14,8 +14,17 @@ export interface Preference {
   hardNo: string[];
 }
 
+export interface Weather {
+  conditions: string;
+  highTemp: number;
+  lowTemp: number;
+  rainChance?: number;
+}
+
 export interface Day {
   day: number;
+  date?: string;
+  weather?: Weather;
   morning: string;
   afternoon: string;
   evening: string;
