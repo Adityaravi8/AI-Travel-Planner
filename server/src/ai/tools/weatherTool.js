@@ -52,34 +52,49 @@ function getSeasonMultiplier(date) {
   return { temp: 1.0, rain: 1.0 };
 }
 
-async function fetchWeather(location, date) {
-  const apiKey = process.env.WEATHER_API_KEY;
+// WMO Weather interpretation codes
+const weatherCodes = {
+  0: "Clear sky",
+  1: "Mainly clear",
+  2: "Partly cloudy",
+  3: "Overcast",
+  45: "Foggy",
+  48: "Depositing rime fog",
+  51: "Light drizzle",
+  53: "Moderate drizzle",
+  55: "Dense drizzle",
+  61: "Slight rain",
+  63: "Moderate rain",
+  65: "Heavy rain",
+  71: "Slight snow",
+  73: "Moderate snow",
+  75: "Heavy snow",
+  80: "Slight rain showers",
+  81: "Moderate rain showers",
+  82: "Violent rain showers",
+  95: "Thunderstorm",
+  96: "Thunderstorm with slight hail",
+  99: "Thunderstorm with heavy hail",
+};
 
-  if (apiKey) {
-    try {
-      const response = await fetch(
-        `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(location)}&dt=${date}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const day = data.forecast.forecastday[0].day;
-        return {
-          conditions: day.condition.text,
-          highTemp: Math.round(day.maxtemp_f),
-          lowTemp: Math.round(day.mintemp_f),
-          rainChance: day.daily_chance_of_rain,
-          recommendation: day.daily_chance_of_rain > 50
-            ? "Bring an umbrella and plan indoor activities"
-            : day.maxtemp_f > 85
-            ? "Stay hydrated and seek shade during midday"
-            : "Great weather for outdoor activities",
-        };
+async function getCoordinates(location) {
+  try {
+    const response = await fetch(
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`
+    );
+    if (response.ok) {
+      const data = await response.json();
+      if (data.results && data.results.length > 0) {
+        return { lat: data.results[0].latitude, lon: data.results[0].longitude };
       }
-    } catch (error) {
-      console.log("Weather API unavailable, using mock data");
     }
+  } catch (error) {
+    console.log("Geocoding failed:", error.message);
   }
+  return null;
+}
 
+function getMockWeather(location, date) {
   const climate = getClimateZone(location);
   const pattern = weatherPatterns[climate];
   const season = getSeasonMultiplier(date);
@@ -102,13 +117,52 @@ async function fetchWeather(location, date) {
     recommendation = "Pleasant weather expected - great for outdoor sightseeing";
   }
 
-  return {
-    conditions,
-    highTemp,
-    lowTemp,
-    rainChance,
-    recommendation,
-  };
+  return { conditions, highTemp, lowTemp, rainChance, recommendation };
+}
+
+async function fetchWeather(location, date) {
+  try {
+    const coords = await getCoordinates(location);
+    if (!coords) {
+      console.log("Could not geocode location, using mock data");
+      return getMockWeather(location, date);
+    }
+
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&temperature_unit=fahrenheit&timezone=auto&start_date=${date}&end_date=${date}`
+    );
+
+    if (response.ok) {
+      const data = await response.json();
+      const daily = data.daily;
+
+      if (daily && daily.time && daily.time.length > 0) {
+        const weatherCode = daily.weather_code[0];
+        const conditions = weatherCodes[weatherCode] || "Variable";
+        const highTemp = Math.round(daily.temperature_2m_max[0]);
+        const lowTemp = Math.round(daily.temperature_2m_min[0]);
+        const rainChance = daily.precipitation_probability_max[0] || 0;
+
+        return {
+          conditions,
+          highTemp,
+          lowTemp,
+          rainChance,
+          recommendation: rainChance > 50
+            ? "Bring an umbrella and plan indoor activities"
+            : highTemp > 85
+            ? "Stay hydrated and seek shade during midday"
+            : "Great weather for outdoor activities",
+        };
+      }
+    } else {
+      console.log("Open-Meteo API error:", response.status);
+    }
+  } catch (error) {
+    console.log("Weather API unavailable, using mock data:", error.message);
+  }
+
+  return getMockWeather(location, date);
 }
 
 export const weatherTool = tool(

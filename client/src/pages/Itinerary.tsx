@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -127,8 +127,13 @@ export default function Itinerary() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double fetch in React StrictMode
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
     const fetchItinerary = async () => {
       try {
         const res = await API.get(`/trips/${tripId}/itinerary`);

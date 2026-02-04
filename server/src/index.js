@@ -1,4 +1,9 @@
 import "./polyfill.js";
+import { setMaxListeners } from "events";
+
+// Increase default max listeners to prevent warnings from concurrent fetch calls in LangChain agent
+// AbortSignal uses EventTarget which has a default limit of 10 listeners
+setMaxListeners(20);
 
 import express from "express";
 import cors from "cors";
