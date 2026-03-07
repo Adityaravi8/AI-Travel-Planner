@@ -5,7 +5,6 @@ import { MapPin, Calendar, Clock, DollarSign, ArrowRight } from "lucide-react";
 import API from "../api";
 import PageWrapper from "../components/ui/PageWrapper";
 import AnimatedButton from "../components/ui/AnimatedButton";
-import AnimatedInput from "../components/ui/AnimatedInput";
 import { staggerContainerVariants, staggerItemVariants } from "../utils/motionVariants";
 
 export default function CreateTrip() {
